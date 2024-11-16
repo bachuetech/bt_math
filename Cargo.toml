@@ -1,0 +1,15 @@
+[package]
+name = "bt_math"
+version = "0.1.0"
+edition = "2021"
+authors = ["calvarez <calvarez@bachuetech.biz>"]
+description = "Basic math expression evaluator library. Support basic math operators (+,-,*,/,^), parenthesis, and some functions such as log, ln, log2, exp, sin, cos, tan, asin, acos, atan, abs, sqrt"
+keywords = ["math"]
+categories = ["science", "mathematics"]
+repository = "https://github.com/bachuetech/bt_math.git"
+readme = "README.md"
+homepage = "https://github.com/bachuetech/bt_math"
+license = "GPL-3.0-only"
+
+[dependencies]
+regex = "1.11.1"
