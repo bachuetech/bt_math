@@ -1,6 +1,6 @@
-/// BT MATH
+/// BT MATH is a simple implementation of an expression evaluator that can handle basic arithmetic operations, parentheses, and some mathematical functions
 /// BT MATH provides a way to evaluate mathematical expressions using RPN (Reverse Polish Notation)
-/// 
+/// The RPN evaluator is implemented in two parts: parsing and evaluation.
 
 
 use regex::Regex;
@@ -8,6 +8,11 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::str::FromStr;
 
+/// Enum Token represents different types of tokens in the RPN expression:
+/// Number represents a number value, which is stored as a floating-point number (f64).
+/// Operator represents an operator (e.g., +, -, *, /) and stores the operator as a string.
+/// Function represents a mathematical function (e.g., sin, cos, tan) and stores the function name as a string.
+/// LeftParen and RightParen represent parentheses, which are used to group expressions.
 #[derive(Debug, Clone)]
 enum Token {
     Number(f64),
@@ -17,7 +22,7 @@ enum Token {
     RightParen,
 }
 
-// Implementing Display trait for Token enum
+/// Implementing Display trait for Token enum. useful for debug
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -31,6 +36,7 @@ impl fmt::Display for Token {
 }
 
 impl Token {
+    ///returns an integer that represents how strongly an operator or function binds to its operands. Operators have higher precedence than functions and multiplication/division have higher precedence than addition/subtraction
     fn precedence(&self) -> i32 {
         match self {
             Token::Operator(op) => match op.as_str() {
@@ -45,6 +51,9 @@ impl Token {
     }
 }
 
+/// Public function that evaluate a mathematical expression with a combination of basic arithmetic operations and mathematical functions
+/// It strips spaces, tokenizes the input string, converts it to RPN, and then evaluates the RPN expression.
+/// Returns the results as a Float
 pub fn evaluate_expression(expression: &str) -> Result<f64, String> {
     let expression = expression.replace(" ", ""); // Remove spaces
     let tokens = tokenize(&expression)?;
@@ -52,7 +61,8 @@ pub fn evaluate_expression(expression: &str) -> Result<f64, String> {
     evaluate_rpn(&rpn)
 }
 
-// Tokenize the input expression
+/// Tokenize the input expression
+/// Uses a regular expression to break down the input string into numbers, operators, parentheses, and function names
 fn tokenize(expression: &str) -> Result<Vec<Token>, String> {
     let re = Regex::new(r"(\d+\.?\d*|\+|\-|\*|\/|\^|\(|\)|log|ln|log2|exp|sin|cos|tan|asin|acos|atan|abs|sqrt)")
         .unwrap();
@@ -76,7 +86,8 @@ fn tokenize(expression: &str) -> Result<Vec<Token>, String> {
     Ok(tokens)
 }
 
-// Convert infix notation to Reverse Polish Notation (RPN) using the Shunting Yard algorithm
+/// Convert infix notation to Reverse Polish Notation (RPN) using the Shunting Yard algorithm
+/// It uses a stack to temporarily hold operators until they can be placed behind their operands according to their precedence.
 fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
     let mut output = Vec::new();
     let mut operators = VecDeque::new();
@@ -119,7 +130,8 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
     Ok(output)
 }
 
-// Evaluate the expression in Reverse Polish Notation (RPN)
+/// Evaluate the expression in Reverse Polish Notation (RPN)
+/// Numbers are pushed onto the stack, and when an operator is encountered, it pops two numbers from the stack, applies the operation, and pushes the result back onto the stack. Functions also pop arguments from the stack and apply mathematical operations accordingly.
 fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
     let mut stack = VecDeque::new();
 
