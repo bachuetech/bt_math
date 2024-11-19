@@ -1,7 +1,8 @@
 /// BT MATH is a simple implementation of an expression evaluator that can handle basic arithmetic operations, parentheses, and some mathematical functions
-/// BT MATH provides a way to evaluate mathematical expressions using RPN (Reverse Polish Notation)
-/// The RPN evaluator is implemented in two parts: parsing and evaluation.
-
+/// that provide a way to evaluate mathematical expressions using RPN (Reverse Polish Notation) implemented in two parts: parsing and evaluation.
+/// Usage:
+/// let expression = "2 + 3 * 4";
+/// let f = evaluate_expression(expression).unwrap();
 
 use regex::Regex;
 use std::collections::VecDeque;
@@ -120,7 +121,7 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
                 operators.push_back(token.clone());
             }
         }
-        //println!("output {:?}, operators: {:?}", output, operators);
+
     }
 
     while let Some(op) = operators.pop_back() {
