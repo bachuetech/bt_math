@@ -4,7 +4,7 @@ BT MATH
 ## Description
 A simple implementation of an expression evaluator that can handle basic arithmetic operations, parentheses, and some mathematical functions that provide a way to evaluate mathematical expressions using RPN (Reverse Polish Notation) implemented in two parts: parsing and evaluation.
 
-Support the use of PI and E (Euler's number), negative numbers or expressions and the following furnctions: ln, log2, exp (e^#), asin, acos, atan, sin, cos. tan. abs, sqrt. log10
+Support the use of PI and E (Euler's number), negative numbers or expressions, and the following functions: ln, log2, exp (e^#), asin, acos, atan, sin, cos. tan. abs, sqrt. log10
 
 
 ## Usage
