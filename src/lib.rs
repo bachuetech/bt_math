@@ -113,7 +113,6 @@ fn tokenize(expression: &str) -> Result<Vec<Token>, String> {
         }
     }
 
-    println!("Tokens0 {:?}", tokens);
     Ok(tokens)
 }
 
@@ -171,7 +170,6 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
         output.push(op);
     }
 
-    println!("Tokens {:?}", output);
     Ok(output)
 }
 
@@ -179,9 +177,7 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
 /// Numbers are pushed onto the stack, and when an operator is encountered, it pops two numbers from the stack, applies the operation, and pushes the result back onto the stack. Functions also pop arguments from the stack and apply mathematical operations accordingly.
 fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
     let mut stack = VecDeque::new();
-println!("rpn: {:?}", rpn);
     for token in rpn {
-println!("Token: {:?}", token);        
         match token {
             Token::Number(value) => {
                 stack.push_back(*value);

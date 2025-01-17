@@ -1,6 +1,6 @@
 [package]
 name = "bt_math"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["calvarez <calvarez@bachuetech.biz>"]
 description = "Basic math expression evaluator library. Support basic math operators (+,-,*,/,^), parenthesis, and functions such as log10, ln, log2, exp, sin, cos, tan, asin, acos, atan, abs, sqrt. Support PI and E (Euler's number) as constants. Support negative numbers/expressions"
