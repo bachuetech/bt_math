@@ -50,6 +50,16 @@ impl Token {
             _ => 0,
         }
     }
+
+    fn to_string(&self) -> String {
+        match self {
+            Token::Number(num) => num.to_string(),
+            Token::Operator(op) => op.clone(),
+            Token::Function(func) => func.clone(),
+            Token::LeftParen => String::from("("),
+            Token::RightParen => String::from(")"),
+        }
+    }
 }
 
 /// Public function that evaluate a mathematical expression with a combination of basic arithmetic operations and mathematical functions
@@ -65,26 +75,59 @@ pub fn evaluate_expression(expression: &str) -> Result<f64, String> {
 /// Tokenize the input expression
 /// Uses a regular expression to break down the input string into numbers, operators, parentheses, and function names
 fn tokenize(expression: &str) -> Result<Vec<Token>, String> {
-    let re = Regex::new(r"(\d+\.?\d*|\+|\-|\*|\/|\^|\(|\)|log|ln|log2|exp|sin|cos|tan|asin|acos|atan|abs|sqrt)")
+    let rexpression = Regex::new(r"(\d+\.?\d*|\+|\-|\*|\/|\^|\(|\)|ln|log2|exp|asin|acos|atan|sin|cos|tan|abs|sqrt|log10|PI|E)")
         .unwrap();
     let mut tokens = Vec::new();
 
-    for cap in re.captures_iter(expression) {
+    let mut iter = rexpression.captures_iter(expression);
+    //for cap in rexpression.captures_iter(expression) { //Change While 
+    while let Some(cap) = iter.next(){
         let token = &cap[0];
         if let Ok(number) = f64::from_str(token) {
             tokens.push(Token::Number(number));
-        } else if token == "+" || token == "-" || token == "*" || token == "/" || token == "^" {
+        }else if token == "-" {
+                match tokens.last(){
+                    None => {
+                        tokens.push(Token::Number(-1.00));
+                        tokens.push(Token::Operator("*".to_owned()));
+                    },
+                    Some(c) => {
+                        if c.to_string() == "(" || is_operator(&c.to_string())  {
+                            tokens.push(Token::Number(-1.00));
+                            tokens.push(Token::Operator("*".to_owned()));
+                        }else{
+                            tokens.push(Token::Operator(token.to_string()));
+                        }
+                    },
+                }
+        } else if token == "+" || token == "*" || token == "/" || token == "^" {
             tokens.push(Token::Operator(token.to_string()));
         } else if token == "(" {
             tokens.push(Token::LeftParen);
         } else if token == ")" {
             tokens.push(Token::RightParen);
-        } else {
+        } else if let Ok(number) = evaluate_const(&token.to_string()){
+            tokens.push(Token::Number(number));
+        }else{
             tokens.push(Token::Function(token.to_string()));
         }
     }
 
+    println!("Tokens0 {:?}", tokens);
     Ok(tokens)
+}
+
+fn is_operator(c: &str) -> bool {
+    c == "+" || c == "-" || c == "*" || c == "/" || c == "^"
+}
+
+/// Evaluate constants and returns its f64 value or same received strings as error.
+fn evaluate_const(p_const: &String) -> Result<f64, &str>{
+    match p_const.as_str(){
+        "PI" => return Ok(std::f64::consts::PI),
+        "E"  => return Ok(std::f64::consts::E),
+        _    => return Err(p_const)
+    };
 }
 
 /// Convert infix notation to Reverse Polish Notation (RPN) using the Shunting Yard algorithm
@@ -128,6 +171,7 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
         output.push(op);
     }
 
+    println!("Tokens {:?}", output);
     Ok(output)
 }
 
@@ -135,9 +179,9 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
 /// Numbers are pushed onto the stack, and when an operator is encountered, it pops two numbers from the stack, applies the operation, and pushes the result back onto the stack. Functions also pop arguments from the stack and apply mathematical operations accordingly.
 fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
     let mut stack = VecDeque::new();
-
-    //println!("RPN: {:?}",&rpn);
+println!("rpn: {:?}", rpn);
     for token in rpn {
+println!("Token: {:?}", token);        
         match token {
             Token::Number(value) => {
                 stack.push_back(*value);
@@ -145,17 +189,17 @@ fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
             Token::Operator(op) => {
                 let b = stack
                     .pop_back()
-                    .ok_or("Invalid expression: not enough values for operator")?;
+                    .ok_or("Invalid expression: not enough values for operator (b)")?;
                 let a = stack
                     .pop_back()
-                    .ok_or("Invalid expression: not enough values for operator")?;
+                    .ok_or("Invalid expression: not enough values for operator (a)")?;
                 let result = match op.as_str() {
                     "+" => a + b,
                     "-" => a - b,
                     "*" => a * b,
                     "/" => a / b,
                     "^" => a.powf(b),
-                    _ => panic!("Unknown operator"),
+                    _ =>return Err(format!("Unknown operator {:?}", token)), // panic!("Unknown operator"),
                 };
                 stack.push_back(result);
             }
@@ -176,7 +220,8 @@ fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
                     "log2" => arg.log2(),
                     "abs" => arg.abs(),
                     "sqrt" => arg.sqrt(),
-                    _ => panic!("Unknown function"),
+                    "log10" => arg.log10(),
+                    _ => return Err(format!("Unknown function: {:?}", token)) //panic!("Unknown function"),
                 };
                 stack.push_back(result);
             }
