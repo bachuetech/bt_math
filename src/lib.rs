@@ -3,8 +3,7 @@
 /// Usage:
 /// let expression = "2 + 3 * 4";
 /// let f = evaluate_expression(expression).unwrap();
-
-use regex::Regex;
+use regex::{CaptureMatches, Captures, Regex};
 use std::collections::VecDeque;
 use std::fmt;
 use std::str::FromStr;
@@ -66,54 +65,108 @@ impl Token {
 /// It strips spaces, tokenizes the input string, converts it to RPN, and then evaluates the RPN expression.
 /// Returns the results as a Float
 pub fn evaluate_expression(expression: &str) -> Result<f64, String> {
-    let expression = expression.replace(" ", ""); // Remove spaces
+    let expression = replace_key_words(&expression.replace(" ", "")); // Remove spaces
     let tokens = tokenize(&expression)?;
     let rpn = to_rpn(&tokens)?;
     evaluate_rpn(&rpn)
 }
 
+///This function will match specific keywords and replace them accordingly
+/// Case 1: match the expressions in the format pow(#1,#2) and replace them with just #1^#2
+fn replace_key_words(input: &str) -> String {
+    //match the expressions in the format pow(#1,#2) and replace them with just #1^#2
+    let regex = Regex::new(r"(?i)pow\s*\(\s*(-?\d+(\.\d*)?)\s*,\s*(-?\d+(\.\d*)?)\s*\)").unwrap();
+
+    // Replace all matches with the desired format
+    regex
+        .replace_all(&input, |caps: &Captures| {
+            let base = &caps[1];
+            let exponent = &caps[3];
+            format!("{}^{}", base, exponent)
+        })
+        .to_string()
+}
+
 /// Tokenize the input expression
 /// Uses a regular expression to break down the input string into numbers, operators, parentheses, and function names
 fn tokenize(expression: &str) -> Result<Vec<Token>, String> {
-    let rexpression = Regex::new(r"(\d+\.?\d*|\+|\-|\*|\/|\^|\(|\)|ln|log2|exp|asin|acos|atan|sin|cos|tan|abs|sqrt|log10|PI|E)")
+    let rexpression = Regex::new(r"(?i)(\d+\.?\d*|\+|\-|\*|\/|\^|\(|\)|ln|log2|exp|asin|acos|atan|sin|cos|tan|abs|sqrt|log10|PI|E)")
         .unwrap();
     let mut tokens = Vec::new();
 
     let mut iter = rexpression.captures_iter(expression);
-    //for cap in rexpression.captures_iter(expression) { //Change While 
-    while let Some(cap) = iter.next(){
+
+    while let Some(cap) = iter.next() {
         let token = &cap[0];
-        if let Ok(number) = f64::from_str(token) {
-            tokens.push(Token::Number(number));
-        }else if token == "-" {
-                match tokens.last(){
-                    None => {
-                        tokens.push(Token::Number(-1.00));
-                        tokens.push(Token::Operator("*".to_owned()));
-                    },
-                    Some(c) => {
-                        if c.to_string() == "(" || is_operator(&c.to_string())  {
-                            tokens.push(Token::Number(-1.00));
-                            tokens.push(Token::Operator("*".to_owned()));
-                        }else{
-                            tokens.push(Token::Operator(token.to_string()));
-                        }
-                    },
-                }
-        } else if token == "+" || token == "*" || token == "/" || token == "^" {
-            tokens.push(Token::Operator(token.to_string()));
-        } else if token == "(" {
-            tokens.push(Token::LeftParen);
-        } else if token == ")" {
-            tokens.push(Token::RightParen);
-        } else if let Ok(number) = evaluate_const(&token.to_string()){
-            tokens.push(Token::Number(number));
-        }else{
-            tokens.push(Token::Function(token.to_string()));
-        }
+        push_tokens(&mut iter, &mut tokens, token)
     }
 
     Ok(tokens)
+}
+
+fn push_tokens(iter: &mut CaptureMatches<'_, '_>, tokens: &mut Vec<Token>, token: &str) {
+    if let Ok(number) = f64::from_str(token) {
+        tokens.push(Token::Number(number));
+    } else if token == "-" {
+        if let Some(cap_fwd) = iter.next() {
+            let token_fwd = &cap_fwd[0];
+                match tokens.last() {
+                    None => {
+                        if let Ok(number_fwd) = f64::from_str(token_fwd) {
+                            tokens.push(Token::Number(number_fwd * -1.00));
+                        }else if let Ok(number_fwd) = evaluate_const(&token_fwd.to_string()) {
+                            tokens.push(Token::Number(number_fwd * -1.00 ));
+                        } else {
+                            //tokens.push(Token::Operator(token.to_string()));
+                            tokens.push(Token::Number(-1.00));
+                            tokens.push(Token::Operator("*".to_owned()));                            
+                            push_tokens(iter, tokens, token_fwd); 
+                        }
+                    }
+                    Some(c) => {
+                        //if let Ok(number_prev) = f64::from_str(&c.to_string()) {
+                        if !f64::from_str(&c.to_string()).is_err() {
+                            if let Ok(number_fwd) = f64::from_str(token_fwd) {
+                                tokens.push(Token::Operator(token.to_string()));
+                                tokens.push(Token::Number(number_fwd));
+                            }else if let Ok(number_fwd) = evaluate_const(&token_fwd.to_string()) {
+                                tokens.push(Token::Number(number_fwd * -1.00 ));    
+                            }else{
+                                //tokens.push(Token::Number(-1.00));
+                                //tokens.push(Token::Operator("*".to_owned()));
+                                tokens.push(Token::Operator("-".to_owned()));
+                                push_tokens(iter, tokens, token_fwd);                            
+                            }
+                        }else if c.to_string() == "(" || is_operator(&c.to_string()) {
+                            if let Ok(number_fwd) = f64::from_str(token_fwd) {
+                                tokens.push(Token::Number(number_fwd * -1.00));
+                            }else{
+                                tokens.push(Token::Number(-1.00));
+                                tokens.push(Token::Operator("*".to_owned()));
+                                push_tokens(iter, tokens, token_fwd);   
+                            }
+                        } else {
+                            tokens.push(Token::Operator(token.to_string()));
+                            push_tokens(iter, tokens, token_fwd);
+                        }
+                    }
+            //    }
+            }
+        } else {
+            tokens.push(Token::Operator(token.to_string()));
+        }
+    } else if token == "+" || token == "*" || token == "/" || token == "^" {
+        tokens.push(Token::Operator(token.to_string()));
+    } else if token == "(" {
+        tokens.push(Token::LeftParen);
+    } else if token == ")" {
+        tokens.push(Token::RightParen);
+    } else if let Ok(number) = evaluate_const(&token.to_string()) {
+        tokens.push(Token::Number(number));
+    } else {
+        tokens.push(Token::Function(token.to_string()));
+    }
+    
 }
 
 fn is_operator(c: &str) -> bool {
@@ -121,11 +174,11 @@ fn is_operator(c: &str) -> bool {
 }
 
 /// Evaluate constants and returns its f64 value or same received strings as error.
-fn evaluate_const(p_const: &String) -> Result<f64, &str>{
-    match p_const.as_str(){
+fn evaluate_const(p_const: &String) -> Result<f64, &str> {
+    match p_const.to_uppercase().as_str() {
         "PI" => return Ok(std::f64::consts::PI),
-        "E"  => return Ok(std::f64::consts::E),
-        _    => return Err(p_const)
+        "E" => return Ok(std::f64::consts::E),
+        _ => return Err(p_const),
     };
 }
 
@@ -163,7 +216,6 @@ fn to_rpn(tokens: &[Token]) -> Result<Vec<Token>, String> {
                 operators.push_back(token.clone());
             }
         }
-
     }
 
     while let Some(op) = operators.pop_back() {
@@ -195,7 +247,7 @@ fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
                     "*" => a * b,
                     "/" => a / b,
                     "^" => a.powf(b),
-                    _ =>return Err(format!("Unknown operator {:?}", token)), // panic!("Unknown operator"),
+                    _ => return Err(format!("Unknown operator {:?}", token)), // panic!("Unknown operator"),
                 };
                 stack.push_back(result);
             }
@@ -203,7 +255,7 @@ fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
                 let arg = stack
                     .pop_back()
                     .ok_or("Invalid expression: not enough values for function")?;
-                let result = match func.as_str() {
+                let result = match func.to_lowercase().as_str() {
                     "sin" => arg.sin(),
                     "cos" => arg.cos(),
                     "tan" => arg.tan(),
@@ -217,7 +269,7 @@ fn evaluate_rpn(rpn: &[Token]) -> Result<f64, String> {
                     "abs" => arg.abs(),
                     "sqrt" => arg.sqrt(),
                     "log10" => arg.log10(),
-                    _ => return Err(format!("Unknown function: {:?}", token)) //panic!("Unknown function"),
+                    _ => return Err(format!("Unknown function: {:?}", token)), //panic!("Unknown function"),
                 };
                 stack.push_back(result);
             }

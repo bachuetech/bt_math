@@ -19,6 +19,8 @@ let f = evaluate_expression(expression).unwrap();
     * Initial Release
 * 0.2.0
     * Added PI and E (Euler's number) support. Support for negative numbers. Fix error with log (log was removed) and added log10.
+* 0.3.0
+    * POW(x,y) is a function now supported. Also fix some negative number issues. Make it case insensitive. 
 
 ## License
 GPL-3.0-only

@@ -2,19 +2,19 @@ use bt_math::evaluate_expression;
 
 #[test]
 fn test_basic_arithmetic(){
-    assert_eq!(evaluate_expression("1 + 2 - 3 / 10 ").unwrap(), 2.7);
+    assert_eq!(evaluate_expression("1 + 2 - 3 / 10 * 5").unwrap(), 1.5);
 }
 
 #[test]
 fn test_evaluate_with_numbers_and_operators() {
-    let expression = "2 + 3 * 4";
-    let expected_result = 14.0;
+    let expression = "(2 + 3) * 4";
+    let expected_result = 20.0;
     assert_eq!(evaluate_expression(expression).unwrap(), expected_result);
 }
 #[test]
 fn test_evaluate_with_nested_parentheses() {
-    let expression = "(2 + 3) * 4";
-    let expected_result = 20.0;
+    let expression = "((2 + 3) * 4)^-2";
+    let expected_result = 0.0025;
     assert_eq!(evaluate_expression(expression).unwrap(), expected_result);
 }
 
@@ -97,6 +97,49 @@ fn test_evaluate_invalid_funct() {
 
 #[test]
 fn test_invalid_funct_param() {
-    let expression = "atan(hellow) * acos(-0.988031))";
+    let expression = "atan(rrr) * acos(-0.988031))";
     assert!(evaluate_expression(expression).is_err());
+}
+
+
+#[test]
+fn test_negative_nums_pow_replace() {
+    let expression = "POW(-5.357, -3)";
+    let expected_result = -0.006504816667752897;
+    assert_eq!(evaluate_expression(expression).unwrap(), expected_result );
+}
+
+#[test]
+fn test_negative_func_start() {
+    let expression = "-Sin(3.2547) - pow(5.365, 3.753) * COS(-45)";
+    let expected_result = -287.29639770747946;
+    assert_eq!(evaluate_expression(expression).unwrap(), expected_result );
+}
+
+#[test]
+fn test_negative_const() {
+    let expression = "-e^2*-PI";
+    let expected_result = -23.213404357363384;
+    assert_eq!(evaluate_expression(expression).unwrap(), expected_result );
+}
+
+#[test]
+fn test_double_minus_negative() {
+    let expression = "-3--3";
+    let expected_result = 0.00;
+    assert_eq!(evaluate_expression(expression).unwrap(), expected_result );
+}
+
+#[test]
+fn test_double_minus_negative_parenthesis() {
+    let expression = "-(-3--2)";
+    let expected_result = 1.00;
+    assert_eq!(evaluate_expression(expression).unwrap(), expected_result );
+}
+
+#[test]
+fn test_negative_functions() {
+    let expression = "-sin(45)--cos(45)-tan(-30)";
+    let expected_result = -6.730912732362665;
+    assert_eq!(evaluate_expression(expression).unwrap(), expected_result );
 }
