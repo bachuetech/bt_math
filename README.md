@@ -21,6 +21,8 @@ let f = evaluate_expression(expression).unwrap();
     * Added PI and E (Euler's number) support. Support for negative numbers. Fix error with log (log was removed) and added log10.
 * 0.3.0
     * POW(x,y) is a function now supported. Also fix some negative number issues. Make it case insensitive. 
+* 0.3.1
+    * Move to Rust 2024 Edition
 
 ## License
 GPL-3.0-only
